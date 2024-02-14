@@ -2,11 +2,13 @@ import scrapy
 
 from pep_parse.items import PepParseItem
 
+DOMAIN = 'peps.python.org'
+
 
 class PepSpider(scrapy.Spider):
     name = 'pep'
-    allowed_domains = ['peps.python.org']
-    start_urls = ['https://peps.python.org/']
+    allowed_domains = [DOMAIN]
+    start_urls = ['https://' + f'{domain}/' for domain in allowed_domains]
 
     def parse(self, response):
         for link in response.css('#numerical-index a.pep::attr(href)'):

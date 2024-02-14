@@ -1,27 +1,33 @@
 import csv
-from collections import Counter
+from collections import defaultdict
 import datetime as dt
+from pathlib import Path
 
 from pep_parse.settings import BASE_DIR
 
 TIME_FORMAT = '%Y-%m-%d_%H-%M-%S'
+FILE_DIR = 'results'
+FILE_NAME = 'status_summary_{}.csv'
 
 
 class PepParsePipeline:
     def open_spider(self, spider):
-        self.storage = list()
+        self.storage = defaultdict(int)
 
     def process_item(self, item, spider):
-        self.storage.append(item.get('status'))
+        self.storage[item.get('status')] += 1
         return item
 
     def close_spider(self, spider):
-        result = Counter(self.storage)
         time = dt.datetime.now().strftime(TIME_FORMAT)
-        file_dir = f'{BASE_DIR}/results'
-        filename = 'status_summary_{}.csv'.format(time)
-        file_path = f'{file_dir}/{filename}'
-        file = csv.writer(open(file_path, 'w'))
-        file.writerow(['Статус', 'Количество'])
-        result['Total'] = sum(result.values())
-        file.writerows(result.items())
+        file_dir_path = Path(BASE_DIR, FILE_DIR)
+        filename = FILE_NAME.format(time)
+        file_path = Path(file_dir_path, filename)
+        with open(file_path, 'w', encoding='utf-8') as f:
+            writer = csv.writer(f, dialect='unix')
+            data = (
+                ('Статус', 'Количество'),
+                *self.storage.items(),
+                ('Total', sum(self.storage.values()))
+            )
+            writer.writerows(data)
